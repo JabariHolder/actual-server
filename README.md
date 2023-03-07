@@ -26,8 +26,22 @@ To run using a Docker container you can use following commands;
 git clone https://github.com/actualbudget/actual-server.git
 cd actual-server
 docker build -t actual-server .
-docker run -p 5006:5006 actual-server
+docker run --restart=unless-stopped -d -p 5006:5006 -v ${pwd}/data:/data --name holderfinance actual-server
+docker-compose -p actual-server up
 ```
+
+PI
+```
+sudo route -n
+sudo route add default gw 10.0.0.1
+
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+npm install -g yarn pm2
+sudo pm2 start yarn --name holderfinance -- start
+pm2 startup
+sudo pm2 save --force
+ ```
 
 ## Deploying
 
