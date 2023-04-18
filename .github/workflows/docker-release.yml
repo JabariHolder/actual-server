@@ -11,8 +11,9 @@ on:
 
 env:
   IMAGES: |
-    jlongster/actual-server
+    actualbudget/actual-server
     ghcr.io/actualbudget/actual-server
+    jlongster/actual-server
 
   # Creates the following tags:
   # - actual-server:latest (see docker/metadata-action flavor inputs, below)
@@ -69,20 +70,20 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push standard image
+      - name: Build and push ubuntu image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           file: docker/stable-ubuntu.Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           tags: ${{ steps.meta.outputs.tags }}
 
-      - name: Build and push Alpine image
+      - name: Build and push alpine image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           file: docker/stable-alpine.Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
           tags: ${{ steps.alpine-meta.outputs.tags }}

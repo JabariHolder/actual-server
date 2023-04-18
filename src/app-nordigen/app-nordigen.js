@@ -1,5 +1,7 @@
+import { isAxiosError } from 'axios';
 import express from 'express';
 import path from 'path';
+import { inspect } from 'util';
 
 import { nordigenService } from './services/nordigen-service.js';
 import {
@@ -8,6 +10,7 @@ import {
   GenericNordigenError,
 } from './errors.js';
 import { handleError } from './util/handle-error.js';
+import { sha256String } from '../util/hash.js';
 import validateUser from '../util/validate-user.js';
 
 const app = express();
@@ -69,7 +72,13 @@ app.post(
         status: 'ok',
         data: {
           ...requisition,
-          accounts,
+          accounts: await Promise.all(
+            accounts.map(async (account) =>
+              account?.iban
+                ? { ...account, iban: await sha256String(account.iban) }
+                : account,
+            ),
+          ),
         },
       });
     } catch (error) {
@@ -88,14 +97,22 @@ app.post(
 app.post(
   '/get-banks',
   handleError(async (req, res) => {
-    let { country } = req.body;
+    let { country, showDemo = false } = req.body;
 
     await nordigenService.setToken();
     const data = await nordigenService.getInstitutions(country);
 
     res.send({
       status: 'ok',
-      data,
+      data: showDemo
+        ? [
+            {
+              id: 'SANDBOXFINANCE_SFIN0000',
+              name: 'DEMO bank (used for testing bank-sync)',
+            },
+            ...data,
+          ]
+        : data,
     });
   }),
 );
@@ -130,6 +147,7 @@ app.post(
 
     try {
       const {
+        iban,
         balances,
         institutionId,
         startingBalance,
@@ -144,6 +162,7 @@ app.post(
       res.send({
         status: 'ok',
         data: {
+          iban: iban ? await sha256String(iban) : null,
           balances,
           institutionId,
           startingBalance,
@@ -176,14 +195,24 @@ app.post(
           });
           break;
         case error instanceof GenericNordigenError:
-          console.log({ message: 'Something went wrong', error });
+          console.log('Something went wrong', inspect(error, { depth: null }));
+          sendErrorResponse({
+            error_type: 'SYNC_ERROR',
+            error_code: 'NORDIGEN_ERROR',
+          });
+          break;
+        case isAxiosError(error):
+          console.log(
+            'Something went wrong',
+            inspect(error.response.data, { depth: null }),
+          );
           sendErrorResponse({
             error_type: 'SYNC_ERROR',
             error_code: 'NORDIGEN_ERROR',
           });
           break;
         default:
-          console.log({ message: 'Something went wrong', error });
+          console.log('Something went wrong', inspect(error, { depth: null }));
           sendErrorResponse({
             error_type: 'UNKNOWN',
             error_code: 'UNKNOWN',
