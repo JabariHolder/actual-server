@@ -40,7 +40,7 @@ curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 npm install -g yarn pm2
 sudo pm2 start yarn --name holderfinance -- start
-pm2 startup
+sudo pm2 startup
 sudo pm2 save --force
  ```
 The multi-arch Docker container image runs on amd64, arm64, and armv7 platforms. Please be warned that Actual may be sluggish on armv7, but users report that it does work.
