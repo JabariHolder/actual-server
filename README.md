@@ -4,7 +4,9 @@ Join the [discord](https://discord.gg/pRYNYr4W5A)!
 
 ## Non-technical users
 
-We are working on simpler one-button click deployments of Actual. This will reduce the friction for people not as comfortable with the command line. Some non-official options are listed at the bottom.
+While we don’t yet have an official hosting provider, PikaPods [offers managed hosting for non-technical users](https://www.pikapods.com/pods?run=actual), starting at around US$1.40/month as of mid-2023.
+
+(If you provide a service like this, feel free to open a PR and add it to this section and our docs!)
 
 ## Running
 
@@ -44,6 +46,8 @@ sudo pm2 startup
 sudo pm2 save --force
  ```
 The multi-arch Docker container image runs on amd64, arm64, and armv7 platforms. Please be warned that Actual may be sluggish on armv7, but users report that it does work.
+
+Note: if you would like to build the edge image variant locally, make sure you run `./docker/download-artifacts.sh` first. Then run `docker build . -f docker/edge-ubuntu.Dockerfile --build-arg GITHUB_TOKEN="ghp_your-personal-access-token"`.
 
 ## Deploying
 
@@ -87,12 +91,6 @@ Now we need to tell Actual to use this volume. Add this in `fly.toml`:
 ```
 
 That's it! Actual will automatically check if the `/data` directory exists and use it automatically.
-
-### One-click hosting solutions
-
-These are non-official methods of one-click solutions for running Actual. If you provide a service like this, feel free to open a PR and add it to this list. These run Actual via a Docker image.
-
-- PikaPods: [Run on PikaPods](https://www.pikapods.com/pods?run=actual)
 
 ## Configuring the server
 

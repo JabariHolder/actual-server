@@ -13,13 +13,20 @@ import {
 } from '../errors.js';
 import * as nordigenNode from 'nordigen-node';
 import * as uuid from 'uuid';
-import config from '../../load-config.js';
 import jwt from 'jws';
+import { SecretName, secretsService } from '../../services/secrets-service.js';
 
 const NordigenClient = nordigenNode.default;
 const nordigenClient = new NordigenClient({
-  secretId: config.nordigen?.secretId,
-  secretKey: config.nordigen?.secretKey,
+  secretId: secretsService.get(SecretName.nordigen_secretId),
+  secretKey: secretsService.get(SecretName.nordigen_secretKey),
+});
+
+secretsService.onUpdate(SecretName.nordigen_secretId, (newSecret) => {
+  nordigenClient.secretId = newSecret;
+});
+secretsService.onUpdate(SecretName.nordigen_secretKey, (newSecret) => {
+  nordigenClient.secretKey = newSecret;
 });
 
 export const handleNordigenError = (response) => {
@@ -170,7 +177,7 @@ export const nordigenService = {
    * @throws {RateLimitError}
    * @throws {UnknownError}
    * @throws {ServiceError}
-   * @returns {Promise<{iban: string, balances: Array<import('../nordigen-node.types.js').Balance>, institutionId: string, transactions: {booked: Array<import('../nordigen-node.types.js').Transaction>, pending: Array<import('../nordigen-node.types.js').Transaction>}, startingBalance: number}>}
+   * @returns {Promise<{iban: string, balances: Array<import('../nordigen-node.types.js').Balance>, institutionId: string, transactions: {booked: Array<import('../nordigen-node.types.js').Transaction>, pending: Array<import('../nordigen-node.types.js').Transaction>, all: Array<import('../nordigen.types.js').TransactionWithBookedStatus>}, startingBalance: number}>}
    */
   getTransactionsWithBalance: async (
     requisitionId,
@@ -202,6 +209,13 @@ export const nordigenService = {
     const sortedPendingTransactions = bank.sortTransactions(
       transactions.transactions?.pending,
     );
+    const allTransactions = sortedBookedTransactions.map((t) => {
+      return { ...t, booked: true };
+    });
+    sortedPendingTransactions.forEach((t) =>
+      allTransactions.push({ ...t, booked: false }),
+    );
+    const sortedAllTransactions = bank.sortTransactions(allTransactions);
 
     const startingBalance = bank.calculateStartingBalance(
       sortedBookedTransactions,
@@ -216,6 +230,7 @@ export const nordigenService = {
       transactions: {
         booked: sortedBookedTransactions,
         pending: sortedPendingTransactions,
+        all: sortedAllTransactions,
       },
     };
   },
